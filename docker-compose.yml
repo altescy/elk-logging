@@ -1,0 +1,37 @@
+version: '3'
+services:
+    app:
+        build: ./app
+        environment:
+            - LOGPATH=/logs/app.log
+        ports:
+            - "5000:5000"
+        command:
+            - "sh"
+            - "-c"
+            - "pipenv sync && pipenv run gunicorn -w5 -b :5000 --access-logfile=/logs/access.log main:app"
+        volumes:
+            - ./app:/app
+            - logs:/logs
+        working_dir: /app
+
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.6.1
+
+    logstash:
+        image: docker.elastic.co/logstash/logstash:6.6.1
+        links:
+            - elasticsearch
+        volumes:
+            - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+            - logs:/logs
+
+    kibana:
+         image: docker.elastic.co/kibana/kibana:6.6.1
+         ports:
+             - "5601:5601"
+         links:
+             - elasticsearch
+
+volumes:
+    logs:
